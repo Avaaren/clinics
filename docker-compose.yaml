@@ -1,0 +1,51 @@
+version: '3.4'
+
+networks:
+  intnet:
+    driver: bridge
+
+volumes:
+  clinics-db:
+
+services:
+  database:
+    container_name: clinics-db
+    image: 'mysql:5.7'
+    environment:
+      MYSQL_DATABASE: clinics
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user
+      MYSQL_ROOT_PASSWORD: root  
+    networks:
+      - intnet
+    ports:
+      - "33006:3306"
+    volumes:
+      - clinics-db:/var/lib/mysql
+  php:
+    container_name: clinics-php
+    build:
+      context: ./
+    volumes:
+      - ./:/var/www/docker
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+
+    # command: sh -c "composer self-update --update-keys && composer install --ignore-platform-reqs && php artisan key:generate"
+    # command: sh -c "composer diagnose"
+
+    depends_on:
+      - database
+    networks:
+      - intnet
+  nginx:
+    image: nginx:alpine
+    build: 
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./logs/nginx:/var/log/nginx/
+      - ./:/var/www/docker
+    networks: 
+      - intnet
